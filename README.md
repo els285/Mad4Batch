@@ -1,6 +1,6 @@
 # Mad4Batch
 
-Simple partner repo for [MadLAD](https://github.com/tzuhanchang/MadLAD) for submitting large-scale MC production and post-processing.
+Simple partner repo for [MadLAD](https://github.com/tzuhanchang/MadLAD) for submitting large-scale MC production and post-processing. Pip-installable.
 
 `mad4condor.py` - Builds a directory containing HTCondor submission scripts for batch production.
 
