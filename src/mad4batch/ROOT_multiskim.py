@@ -23,7 +23,7 @@ if __name__ == "__main__":
         print(f" - {br}")
     
     mypath = "."
-    files_to_hadd = [f for f in listdir(mypath) if isfile(join(mypath, f)) and "delphes" in f and getsize(f)!=0][:10]
+    files_to_hadd = [f for f in listdir(mypath) if isfile(join(mypath, f)) and "delphes" in f and getsize(f)!=0]
     print(f"Skimming {len(files_to_hadd)} files")
     
     for i,file in tqdm(enumerate(files_to_hadd)):
