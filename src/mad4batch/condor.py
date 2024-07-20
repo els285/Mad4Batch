@@ -72,7 +72,6 @@ error      = $(ClusterId).$(Process).err
 log        = $(ClusterId).$(Process).log
 request_cpus = 12
 request_memory = 50 GB
-request_disk = 1 GB
 transfer_executable = True
 should_transfer_files = YES
 transfer_input_files    = ../MadLAD
@@ -86,26 +85,12 @@ queue {self.Njobs}"""
         with open(f"{self.condor_directory_name}/submit.sub","w") as file:
             file.write(text)
             
-
-    # def write_delphes_hadd_script(self):
-        
-    #     hadd_string = """hadd combined_delphes_output.root"""
-        
-    #     onlyfiles = [f for f in listdir(self.condor_directory_name) if isfile(join(self.condor_directory_name, f)) and "delphes" in f and f[-5:]==".root"]
-        
-    #     for f in onlyfiles:
-    #         hadd_string += f
-            
-    #     with open(f"{self.condor_directory_name}/hadd_outputs.txt","w") as file:
-    #         file.write(hadd_string)
-       
-       
        
        
 def main():
     
-    # config_filepath = f"MadLAD/processes/{sys.argv[1]}"
-    config_filepath = sys.argv[1]
+    config_filepath = f"MadLAD/processes/{sys.argv[1]}"
+    # config_filepath = sys.argv[1]
     Njobs           = sys.argv[2]
     
     with open(config_filepath) as stream:
