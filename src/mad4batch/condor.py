@@ -4,22 +4,25 @@ import os
 from os import listdir
 from os.path import isfile, join
 from datetime import datetime
-
+import argparse
 
 
 class Mad4Condor(object):
     
-    def __init__(self,config_name,cfg,Njobs):
+    def __init__(self,config_name,cfg,Njobs,lhe,hepmc):
         self.config_name    = config_name
         self.cfg            = cfg
         self.Njobs          = Njobs
         self.name           = self.cfg["gen"]["block_model"]["save_dir"]
+        self.outputs_string = ""
+        self.remaps_string  = ""
+        self.out_lhe   = lhe 
+        self.out_hepmc = hepmc
         
         self.create_directory()
         self.write_job_script()
-        self.write_submit_file()
-        # self.write_delphes_hadd_script()
-        
+        self.specify_outputs()
+        self.write_submit_file()        
 
     
     def create_directory(self):
@@ -58,9 +61,29 @@ cd -        # Return to condor work directory
         
         with open(f"{self.condor_directory_name}/job.sh","w") as file:
             file.write(text)
+                
+    def specify_outputs(self):
         
+        evt_dir  = 'run_01_decayed_1'  if 'block_madspin' in list(self.cfg['gen'].keys()) else 'run_01'
+        lhe_file = 'unweighted_events' if self.cfg["gen"]["block_model"]["order"]=="lo"   else 'events'
         
+        if self.out_lhe:
+            self.outputs_string += f'MadLAD/{self.name}/Events/{evt_dir}/{lhe_file}.lhe.gz, '
+            self.remaps_string  += f'{lhe_file}.lhe.gz = {lhe_file}_$(Cluster)_$(Process).lhe.gz; '
         
+        if self.out_hepmc:
+            if self.cfg["run"]["shower"] == True:
+                self.outputs_string += f'MadLAD/{self.name}/Events/{evt_dir}/events_PYTHIA8_0.hepmc, '
+                self.remaps_string  += f'events_PYTHIA8_0.hepmc = events_$(Cluster)_$(Process).hepmc; '
+                
+                if 'block_delphes' in list(self.cfg['gen'].keys()):
+                    self.outputs_string += f" MadLAD/{self.name}.root, "
+                    self.remaps_string  += f"{self.name}.root = delphes_$(Cluster)_$(Process).root; "
+            
+            else: 
+                print("Shower is turned off, will not transfer HepMC file or Delphes.root file")
+                
+
     def write_submit_file(self):
         
         text=f"""# Submit file for HTCondor
@@ -75,8 +98,8 @@ request_memory = 50 GB
 transfer_executable = True
 should_transfer_files = YES
 transfer_input_files    = ../MadLAD
-transfer_output_files = MadLAD/{self.name}.root
-transfer_output_remaps = "{self.name}.root = delphes_$(Cluster)_$(Process).root"
+transfer_output_files = {self.outputs_string}
+transfer_output_remaps = "{self.remaps_string}"
 
 when_to_transfer_output = ON_EXIT 
 
@@ -86,12 +109,17 @@ queue {self.Njobs}"""
             file.write(text)
             
        
-       
 def main():
     
-    config_filepath = f"MadLAD/processes/{sys.argv[1]}"
-    # config_filepath = sys.argv[1]
-    Njobs           = sys.argv[2]
+    parser = argparse.ArgumentParser(description="Skim multiple Delphes ROOT file")
+    parser.add_argument("output_file", type=str, help="Path to the output ROOT file")
+    parser.add_argument("Njobs", type=int, help="Branches to keep")
+    parser.add_argument("--lhe",action="store_true",required=False)
+    parser.add_argument("--hepmc",action="store_true",required=False)
+    
+    args = parser.parse_args()   
+         
+    config_filepath = f"MadLAD/processes/{args.output_file}"
     
     with open(config_filepath) as stream:
         try:
@@ -101,6 +129,6 @@ def main():
             
     config_name = config_filepath.split("/")[-1]
     
-    RUN = Mad4Condor(config_name,cfg,Njobs)
+    RUN = Mad4Condor(config_name,cfg,args.Njobs,args.lhe,args.hepmc)
     
 main()
