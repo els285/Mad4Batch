@@ -14,16 +14,20 @@ def write_job_script(output_file,branch_string):
     text = f"""#!/bin/bash
 ./skim_delphes $1 {output_file} {branch_string}
         """
-        
-    with open("jobb.sh","w") as file:
+    output_file = output_file.replace(".root","")
+    job_name = f"job_{output_file}.sh"
+    with open(job_name,"w") as file:
         file.write(text)
 
     
 def write_submit_file(infile_template: str , outfile: str, Nfiles: int):
         
+        output_file = outfile.replace(".root","")
+        job_name = f"job_{output_file}.sh"
+            
         text=f"""# Submit file for HTCondor
 universe   = vanilla
-executable = jobb.sh
+executable = {job_name}
 arguments = {infile_template}_$(Process).root
 output     = $(ClusterId).$(Process).out
 error      = $(ClusterId).$(Process).err
@@ -33,7 +37,7 @@ request_cpus = 12
 request_memory = 10 GB
 transfer_executable = True
 should_transfer_files = YES
-transfer_input_files    = ../Mad4Batch/src/mad4batch/skim_delphes, delphes_3211314_$(Process).root
+transfer_input_files    = ../Mad4Batch/src/mad4batch/skim_delphes, {infile_template}_$(Process).root
 transfer_output_files = {outfile}
 transfer_output_remaps = "{outfile} = {outfile.replace(".root","")}_$(Process).root"
 
@@ -48,12 +52,12 @@ queue {Nfiles}"""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Skim multiple Delphes ROOT file")
-    parser.add_argument("--input_file" , type=str, help="Input file template name",required=True)
-    parser.add_argument("--output_file", type=str, help="Path to the output ROOT file",required=True)
-    parser.add_argument("--branches", type=str, nargs='+', help="Branches to keep",required=False)
+    parser.add_argument("-i","--input_file" , type=str, help="Input file template name",required=True)
+    parser.add_argument("-o","--output_file", type=str, help="Path to the output ROOT file",required=True)
+    parser.add_argument("-b","--branches", type=str, nargs='+', help="Branches to keep",required=False)
     parser.add_argument("--categories", type=str)
     parser.add_argument("--branch-file",type=str)
-    parser.add_argument("--config",type=str,required=False)
+    parser.add_argument("-c","--config",type=str,required=False)
     parser.add_argument("--Nfiles",type=int,required=False)
 
     args = parser.parse_args()    
